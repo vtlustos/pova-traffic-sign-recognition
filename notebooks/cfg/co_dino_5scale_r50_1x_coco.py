@@ -3,6 +3,10 @@ _base_ = [
     './default_runtime.py'
 ]
 
+NUM_GPU = 1
+BATCH_SIZE = 2
+NUM_CLS = 257
+
 # model settings
 num_dec_layer = 6
 lambda_2 = 2.0
@@ -47,7 +51,7 @@ model = dict(
     query_head=dict(
         type='CoDINOHead',
         num_query=900,
-        num_classes=80,
+        num_classes=NUM_CLS,
         num_feature_levels=5,
         in_channels=2048,
         sync_cls_avg_factor=True,
@@ -122,7 +126,7 @@ model = dict(
             in_channels=256,
             fc_out_channels=1024,
             roi_feat_size=7,
-            num_classes=80,
+            num_classes=NUM_CLS,
             bbox_coder=dict(
                 type='DeltaXYWHBBoxCoder',
                 target_means=[0., 0., 0., 0.],
@@ -134,7 +138,7 @@ model = dict(
             loss_bbox=dict(type='GIoULoss', loss_weight=10.0*num_dec_layer*lambda_2)))],
     bbox_head=[dict(
         type='CoATSSHead',
-        num_classes=80,
+        num_classes=NUM_CLS,
         in_channels=256,
         stacked_convs=1,
         feat_channels=256,
@@ -241,7 +245,7 @@ img_norm_cfg = dict(
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
+    #dict(type='RandomFlip', flip_ratio=0.5),
     dict(
         type='AutoAugment',
         policies=[
@@ -295,7 +299,7 @@ test_pipeline = [
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip'),
+            #dict(type='RandomFlip'),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=1),
             dict(type='ImageToTensor', keys=['img']),
@@ -325,4 +329,4 @@ runner = dict(type='EpochBasedRunner', max_epochs=12)
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (2 samples per GPU)
-auto_scale_lr = dict(base_batch_size=16)
+auto_scale_lr = dict(base_batch_size=NUM_GPU * BATCH_SIZE)
