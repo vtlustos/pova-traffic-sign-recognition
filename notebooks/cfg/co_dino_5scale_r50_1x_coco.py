@@ -6,6 +6,7 @@ _base_ = [
 NUM_GPU = 1
 BATCH_SIZE = 2
 NUM_CLS = 257
+WEIGHTS_PATH = "C:/Users/tlust/Downloads/co_dino_5scale_r50_1x_coco.pth"
 
 # model settings
 num_dec_layer = 6
@@ -245,7 +246,7 @@ img_norm_cfg = dict(
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    #dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='RandomFlip', flip_ratio=0.),
     dict(
         type='AutoAugment',
         policies=[
@@ -299,7 +300,7 @@ test_pipeline = [
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
-            #dict(type='RandomFlip'),
+            dict(type='RandomFlip'),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=1),
             dict(type='ImageToTensor', keys=['img']),
@@ -330,3 +331,5 @@ runner = dict(type='EpochBasedRunner', max_epochs=12)
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (2 samples per GPU)
 auto_scale_lr = dict(base_batch_size=NUM_GPU * BATCH_SIZE)
+
+load_from = WEIGHTS_PATH

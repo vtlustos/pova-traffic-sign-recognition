@@ -1,6 +1,7 @@
 import os
 
-DATA_DIR = 'C:\\Users\\tlust\\Downloads\\mtsd\\coco'
+DATA_DIR = 'C:/Users/tlust/Downloads/mtsd/coco'
+CLASSES = tuple(range(0,257))
 
 # dataset settings
 dataset_type = 'CocoDataset'
@@ -23,7 +24,7 @@ test_pipeline = [
     dict(
         type='MultiScaleFlipAug',
         img_scale=(1333, 800),
-        flip=False,
+        # flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
         #    dict(type='RandomFlip'),
@@ -40,11 +41,15 @@ data = dict(
         type=dataset_type,
         ann_file=os.path.join(DATA_DIR, 'annotations', 'train.json' ),
         img_prefix=os.path.join(DATA_DIR, 'images'),
-        pipeline=train_pipeline),
+        pipeline=train_pipeline,
+        classes=CLASSES
+    ),
     val=dict(
         type=dataset_type,
         ann_file=os.path.join(DATA_DIR, 'annotations', 'val.json' ),
         img_prefix=os.path.join(DATA_DIR, 'images'),
-        pipeline=test_pipeline)
+        pipeline=test_pipeline,
+        classes=CLASSES
+    )
 )
 evaluation = dict(interval=1, metric='bbox')
