@@ -114,7 +114,7 @@ for split in ['train', 'val']:
 
 # 4. create dataset.yaml
 with open(os.path.join(detect_path, "dataset.yaml"), "a") as f:
-    f.write("path: {detect_path}\n")
+    f.write(f"path: {detect_path}\n")
     f.write(f"train: {os.path.join('train', 'images')}\n")
     f.write(f"val: {os.path.join('val', 'images')}\n")
     f.write(f"names:\n")
