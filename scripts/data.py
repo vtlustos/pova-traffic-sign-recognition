@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import cv2
 
 # %%
-PATH = "C:/Users/tlust/Downloads/mtsd"
+PATH = "/scratch.ssd/xkotou06/job_19134957.meta-pbs.metacentrum.cz/mtsd"
 
 splits_path = os.path.join(PATH, "splits")
 images_path = os.path.join(PATH, "images")
@@ -23,7 +23,7 @@ coco_path = os.path.join(PATH, "coco")
 # # YOLOv8
 
 # %%
-DOUBLE_STEP = False
+DOUBLE_STEP = True
 
 # %% [markdown]
 # ## Detection dataset
@@ -77,13 +77,12 @@ for split in ['train', 'val']:
         is_empty = True
         for obj in ann['objects']:
             # 3.1 get label index
+            if obj['label'] == 'other-sign':
+                continue
             if DOUBLE_STEP:
                 obj['label'] = 'traffic-sign'                    
             else:
-                if obj['label'] == 'other-sign':
-                    continue
-                else:
-                    obj['label'] = '--'.join(obj['label'].split('--')[1:-1])                      
+                obj['label'] = '--'.join(obj['label'].split('--')[1:-1])                      
                 
             if obj['label'] not in labels:
                 labels.append(obj['label'])
@@ -201,8 +200,8 @@ for ix, value in sign_distr.items():
     print(f"{labels[ix]}: {value}")
 plt.bar(labels, sign_distr.values())
 
-# %% [markdown]
-# # COCO
+%% [markdown]
+# COCO
 
 
 # %%
