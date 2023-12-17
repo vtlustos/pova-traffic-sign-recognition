@@ -201,8 +201,8 @@ for ix, value in sign_distr.items():
     print(f"{labels[ix]}: {value}")
 plt.bar(labels, sign_distr.values())
 
-# %% [markdown]
-# # COCO
+%% [markdown]
+# COCO
 
 
 # # %%
