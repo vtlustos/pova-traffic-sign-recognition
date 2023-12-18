@@ -1,59 +1,60 @@
-# %%
-TRAIN_YOLO = False
-TRAIN_DETR = True
+%%
+TRAIN_YOLO = True
+TRAIN_DETR = False
 
-# %% [markdown]
-# # YOLOv8 training
-# This part of the project explores capabilites of the YOLOv8 model.
+%% [markdown]
+# YOLOv8 training
+This part of the project explores capabilites of the YOLOv8 model.
 
-# %%
-DOUBLE_STEP = False
-BASE_PATH = "C:/Users/tlust/Downloads/mtsd/yolov8"
+%%
+DOUBLE_STEP = True
+BASE_PATH = "/storage/brno12-cerit/home/xvlasa15/mapilary/yolov8"
 
-# %%
+%%
 
-# %%
+%%
 import os
 from ultralytics import YOLO
 
-# %%
+%%
 detect_path = os.path.join(BASE_PATH, "detect", "dataset.yaml")
-classify_path = os.path.join(BASE_PATH, "classify")
+classify_path = os.path.join(BASE_PATH, "classify-full")
 
-# %% [markdown]
-# ## One-step fully taxonomy detection + classification to 313 classes
-# Initial experiment to assess the model's default performance across the entire taxonomy. Anticipated to yield suboptimal results due to the extensive number of classes.
+%% [markdown]
+## One-step fully taxonomy detection + classification to 313 classes
+Initial experiment to assess the model's default performance across the entire taxonomy. Anticipated to yield suboptimal results due to the extensive number of classes.
 
-# %%
+%%
 if TRAIN_YOLO and DOUBLE_STEP == False:
     model = YOLO("yolov8m.pt")  # load a pretrained model
     results = model.train(data=detect_path, epochs=100, imgsz=640, batch=16, fliplr=0)
     print(results)
 
-# %% [markdown]
-# ## 2-stage pipeline
-# Anticipated to yield improved outcomes as a result of decoupling.
+%% [markdown]
+## 2-stage pipeline
+Anticipated to yield improved outcomes as a result of decoupling.
 
-# %% [markdown]
-# ### 1. train binary sign detector
+%% [markdown]
+### 1. train binary sign detector
 
-# %%
+%%
 if TRAIN_YOLO and DOUBLE_STEP:
     model = YOLO('yolov8n.pt')  # load a pretrained model
-    results = model.train(data=detect_path, epochs=10, imgsz=640)
+    results = model.train(data=detect_path, epochs=10, imgsz=640, fliplr=0)
     print(results)
 
-# %% [markdown]
-# ### 2. train sign classifier
+%% [markdown]
+### 2. train sign classifier
 
-# %%
+%%
 if TRAIN_YOLO and DOUBLE_STEP:
-    model = YOLO('yolov8x-cls.pt')  # load a pretrained model
-    results = model.train(data=classify_path, epochs=100, imgsz=224, batch=128)
+    model = YOLO('yolov8n-cls.yaml')  # load a pretrained model
+    results = model.train(data=classify_path, epochs=100, imgsz=64, batch=512, fliplr=0, flipud=0, scale=0, translate=0, 
+                          perspective=0.5, shear=0, mosaic=0, workers=4, augment=True, cache=True, dropout=0.5,  optimizer="AdamW")
     print(results)
 
-# %% [markdown]
-# # DETR
+%% [markdown]
+# DETR
 
 # %%
 PATH = 'C:/Users/tlust/Downloads/mtsd/coco'
