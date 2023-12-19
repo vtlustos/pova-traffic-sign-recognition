@@ -1,31 +1,41 @@
 import os
 import shutil
-
+import cv2
 import torch
 from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms
 from ultralytics import YOLO
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 import yaml
+from torchvision import  transforms
+from cls import Classifier
+from PIL import Image
+import numpy as np
+BASE_CLASSIFIER = True
 
+# classifier = Classifier.load_from_checkpoint("/storage/brno12-cerit/home/xkotou06/POVa/pova-traffic-sign-recognition/models/lightning-cls.ckpt")
+detect_path = '/storage/brno12-cerit/home/xkotou06/POVa/pova-traffic-sign-recognition/data/yolov8-onestep-all-classes/detect/val/images'
+labels_path = '/storage/brno12-cerit/home/xkotou06/POVa/pova-traffic-sign-recognition/data/yolov8-onestep-all-classes/detect/val/labels'
+detector = YOLO("/storage/brno12-cerit/home/xkotou06/POVa/pova-traffic-sign-recognition/models/binary_detector-small-1280.pt")
 
-detector = YOLO('../binary_detector-nano-1280.pt')
-classifier = YOLO('runs/classify/train15/weights/best.pt')
+if BASE_CLASSIFIER:
+    classifier = Classifier.load_from_checkpoint('/storage/brno12-cerit/home/xkotou06/POVa/pova-traffic-sign-recognition/models/lightning-cls.ckpt')
+else:
+    classifier = YOLO('/storage/brno12-cerit/home/xkotou06/POVa/pova-traffic-sign-recognition/models/classifier_nano.pt')
 
-detect_path = '/storage/brno12-cerit/home/xvlasa15/mapilary/yolov8/detect-full/val/images'
-
-labels_path = '/storage/brno12-cerit/home/xvlasa15/mapilary/yolov8/detect-full/val/labels'
 
 #read dataset yaml
-def read_dataset_yaml(file_path):
+def read_yaml(file_path):
     with open(file_path, 'r') as file:
         dataset = yaml.safe_load(file)
     return dataset
 
-dataset_yaml_path = '/storage/brno12-cerit/home/xvlasa15/mapilary/yolov8/detect-full/dataset.yaml'
-det_names = read_dataset_yaml(dataset_yaml_path)["names"]
+dataset_yaml_path = '/storage/brno12-cerit/home/xkotou06/POVa/pova-traffic-sign-recognition/data/yolov8-onestep-all-classes/detect/dataset.yaml'
+classifier_index_names_mapping_path = '/storage/brno12-cerit/home/xkotou06/POVa/pova-traffic-sign-recognition/scripts/classifier_index_classes_mapping.yaml'
 
+det_names = read_yaml(dataset_yaml_path)["names"]
 det_names = {v: k for k, v in det_names.items()}
+classifier_index_names_mapping = read_yaml(classifier_index_names_mapping_path)["names"]
 
 
 
@@ -69,6 +79,7 @@ for label in os.listdir(labels_path):
 results = detector(detect_path, stream=True, verbose=True)
 mAP = MeanAveragePrecision()
 
+
 for (result, file, frame) in results:
     boxes = result.boxes  
     label = labels[file]
@@ -89,18 +100,30 @@ for (result, file, frame) in results:
 
     xyxy = boxes.xyxy.cpu().numpy()
     preds = {"boxes": [], "labels": [], "scores": []}
+
     for box in xyxy:
         #crop the frame, frame is Torch tensor
         x1, y1, x2, y2 = box
         crop = frame[int(y1):int(y2), int(x1):int(x2)]
-        res = classifier(crop, verbose=False)
-        for r in res:
-            class_name = r.names[r.probs.top1]
-            class_idx = det_names[class_name]
-
-            preds["boxes"].append([x1, y1, x2, y2])
-            preds["labels"].append(class_idx)
-            preds["scores"].append(r.probs.top1conf)
+        if BASE_CLASSIFIER:
+            cropped_sign = Image.fromarray(crop).resize((40, 40))
+            # cropped_sign.save("test.jpg")
+            transform = transforms.ToTensor()
+            tensor_image = transform(cropped_sign).unsqueeze(0).to("cuda")
+            with torch.no_grad():
+                res_logits = classifier(tensor_image)
+                classifier_top1 = res_logits.softmax(dim=1).topk(1, dim=1)
+                class_conf = classifier_top1.values[0].item()
+                class_name = classifier_index_names_mapping[classifier_top1.indices[0].item()]
+        else:
+            res = classifier(crop)[0]
+            class_name = res.names[res.probs.top1]
+            class_conf = res.probs.top1conf
+        
+        class_idx = det_names[class_name]
+        preds["boxes"].append([x1, y1, x2, y2])
+        preds["labels"].append(class_idx)
+        preds["scores"].append(class_conf)
 
     # convert to tensors
     preds["boxes"] = torch.tensor(preds["boxes"])
