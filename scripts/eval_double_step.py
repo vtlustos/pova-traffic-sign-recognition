@@ -33,8 +33,8 @@ def read_yaml(file_path):
 dataset_yaml_path = '/storage/brno12-cerit/home/xkotou06/POVa/pova-traffic-sign-recognition/data/yolov8-onestep-all-classes/detect/dataset.yaml'
 classifier_index_names_mapping_path = '/storage/brno12-cerit/home/xkotou06/POVa/pova-traffic-sign-recognition/scripts/classifier_index_classes_mapping.yaml'
 
-det_names = read_yaml(dataset_yaml_path)["names"]
-det_names = {v: k for k, v in det_names.items()}
+det_names_inv = read_yaml(dataset_yaml_path)["names"]
+det_names = {v: k for k, v in det_names_inv.items()}
 classifier_index_names_mapping = read_yaml(classifier_index_names_mapping_path)["names"]
 
 
@@ -106,8 +106,8 @@ for (result, file, frame) in results:
         x1, y1, x2, y2 = box
         crop = frame[int(y1):int(y2), int(x1):int(x2)]
         if BASE_CLASSIFIER:
-            cropped_sign = Image.fromarray(crop).resize((40, 40))
-            # cropped_sign.save("test.jpg")
+            rgb_crop = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
+            cropped_sign = Image.fromarray(rgb_crop).resize((40, 40))
             transform = transforms.ToTensor()
             tensor_image = transform(cropped_sign).unsqueeze(0).to("cuda")
             with torch.no_grad():
@@ -115,6 +115,8 @@ for (result, file, frame) in results:
                 classifier_top1 = res_logits.softmax(dim=1).topk(1, dim=1)
                 class_conf = classifier_top1.values[0].item()
                 class_name = classifier_index_names_mapping[classifier_top1.indices[0].item()]
+                # cropped_sign.save(f"../eval_outputs/{class_name}.jpg")
+
         else:
             res = classifier(crop)[0]
             class_name = res.names[res.probs.top1]
