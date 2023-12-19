@@ -2,3 +2,5 @@ tqdm
 opencv-python
 ultralytics
 globox
+torchmetrics[detection]
+lightning

@@ -1,4 +1,6 @@
+from operator import le
 import os
+import shutil
 from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms
 import lightning as L
@@ -14,15 +16,31 @@ transform = transforms.Compose([
     # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
-# Load your dataset
 train_dataset = datasets.ImageFolder(root=os.path.join(dataset_path,"train"), transform=transform)
 val_dataset = datasets.ImageFolder(root=os.path.join(dataset_path,"val"), transform=transform)
 
+# missing =(set(train_dataset.classes).difference(set(val_dataset.classes)))
+# for folder in missing:
+#     os.makedirs(os.path.join(dataset_path,"val",folder), exist_ok=True)
+#     # copy one image from train to val
+#     shutil.copy(
+#         os.path.join(dataset_path,"train",folder, os.listdir(os.path.join(dataset_path,"train",folder))[0]),
+#         os.path.join(dataset_path,"val",folder, os.listdir(os.path.join(dataset_path,"train",folder))[0])
+#     )
 
-# # Split your dataset into training and validation sets
-# train_size = int(0.8 * len(dataset))
-# val_size = len(dataset) - train_size
-# train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+
+# Load your dataset
+
+
+
+
+# Get class names
+train_classes = train_dataset.classes
+val_classes = val_dataset.classes
+print(len(train_classes), len(val_classes), train_classes == val_classes)
+
+
+
 
 # Define data loaders for training and validation sets
 train_loader = DataLoader(train_dataset, batch_size=512, shuffle=True, num_workers=4)
