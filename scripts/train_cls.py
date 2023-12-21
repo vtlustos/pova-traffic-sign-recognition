@@ -6,7 +6,6 @@ from torchvision import datasets, transforms
 import lightning as L
 from cls import Classifier
 
-# Define the path to your dataset
 dataset_path = '../mapilary/yolov8/classify-full/'
 
 # Define transformations
@@ -29,32 +28,19 @@ val_dataset = datasets.ImageFolder(root=os.path.join(dataset_path,"val"), transf
 #     )
 
 
-# Load your dataset
-
-
-
-
 # Get class names
 train_classes = train_dataset.classes
 val_classes = val_dataset.classes
-print(len(train_classes), len(val_classes), train_classes == val_classes)
 
-
-
-
-# Define data loaders for training and validation sets
 train_loader = DataLoader(train_dataset, batch_size=512, shuffle=True, num_workers=4)
 val_loader = DataLoader(val_dataset, batch_size=512, shuffle=False, num_workers=4)
 
-# Instantiate your model
 model = Classifier()
 
-# Define your training loop
 trainer = L.Trainer(
     max_epochs=10,
     devices=1, 
     accelerator="gpu"
 )
 
-# Train your model
 trainer.fit(model, train_loader, val_loader)

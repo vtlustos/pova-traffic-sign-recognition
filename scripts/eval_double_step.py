@@ -13,15 +13,15 @@ from PIL import Image
 import numpy as np
 BASE_CLASSIFIER = True
 
-# classifier = Classifier.load_from_checkpoint("/storage/brno12-cerit/home/xkotou06/POVa/pova-traffic-sign-recognition/models/lightning-cls.ckpt")
-detect_path = '/storage/brno12-cerit/home/xkotou06/POVa/pova-traffic-sign-recognition/data/yolov8-onestep-all-classes/detect/val/images'
-labels_path = '/storage/brno12-cerit/home/xkotou06/POVa/pova-traffic-sign-recognition/data/yolov8-onestep-all-classes/detect/val/labels'
-detector = YOLO("/storage/brno12-cerit/home/xkotou06/POVa/pova-traffic-sign-recognition/models/binary_detector-small-1280.pt")
+detect_path = '../data/yolov8-onestep-all-classes/detect/val/images'
+labels_path = '../data/yolov8-onestep-all-classes/detect/val/labels'
+detector = YOLO("../models/binary_detector-medium-1920.pt")
 
 if BASE_CLASSIFIER:
-    classifier = Classifier.load_from_checkpoint('/storage/brno12-cerit/home/xkotou06/POVa/pova-traffic-sign-recognition/models/lightning-cls.ckpt')
+    classifier = Classifier.load_from_checkpoint('../models/simple_cnn_classifier.ckpt')
+    classifier.eval()
 else:
-    classifier = YOLO('/storage/brno12-cerit/home/xkotou06/POVa/pova-traffic-sign-recognition/models/classifier_nano.pt')
+    classifier = YOLO('../models/yolo-classifier-medium.pt')
 
 
 #read dataset yaml
@@ -30,8 +30,8 @@ def read_yaml(file_path):
         dataset = yaml.safe_load(file)
     return dataset
 
-dataset_yaml_path = '/storage/brno12-cerit/home/xkotou06/POVa/pova-traffic-sign-recognition/data/yolov8-onestep-all-classes/detect/dataset.yaml'
-classifier_index_names_mapping_path = '/storage/brno12-cerit/home/xkotou06/POVa/pova-traffic-sign-recognition/scripts/classifier_index_classes_mapping.yaml'
+dataset_yaml_path = '../data/yolov8-onestep-all-classes/detect/dataset.yaml'
+classifier_index_names_mapping_path = './classifier_index_classes_mapping.yaml'
 
 det_names_inv = read_yaml(dataset_yaml_path)["names"]
 det_names = {v: k for k, v in det_names_inv.items()}
@@ -42,13 +42,10 @@ classifier_index_names_mapping = read_yaml(classifier_index_names_mapping_path)[
 def on_predict_batch_end(predictor):
     # Retrieve the batch data
     filename, image, _, _ = predictor.batch
-
     # filename without path and extension
     filename = [os.path.splitext(os.path.basename(f))[0] for f in filename] 
-
     # Ensure that image is a list
     image = image if isinstance(image, list) else [image]
-
     # Combine the prediction results with the corresponding frames
     predictor.results = zip(predictor.results, filename, image)
 
@@ -74,11 +71,8 @@ for label in os.listdir(labels_path):
             boxes.append([int(cls), x1, y1, x2, y2])
         labels[name] = boxes
 
-
-
 results = detector(detect_path, stream=True, verbose=True)
 mAP = MeanAveragePrecision()
-
 
 for (result, file, frame) in results:
     boxes = result.boxes  
@@ -115,7 +109,6 @@ for (result, file, frame) in results:
                 classifier_top1 = res_logits.softmax(dim=1).topk(1, dim=1)
                 class_conf = classifier_top1.values[0].item()
                 class_name = classifier_index_names_mapping[classifier_top1.indices[0].item()]
-                # cropped_sign.save(f"../eval_outputs/{class_name}.jpg")
 
         else:
             res = classifier(crop)[0]
@@ -131,10 +124,7 @@ for (result, file, frame) in results:
     preds["boxes"] = torch.tensor(preds["boxes"])
     preds["labels"] = torch.tensor(preds["labels"])
     preds["scores"] = torch.tensor(preds["scores"])
-
-    
     mAP.update([preds], [target])
-
 
 print(mAP.compute())
         
