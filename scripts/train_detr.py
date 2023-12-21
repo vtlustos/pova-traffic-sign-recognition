@@ -1,12 +1,15 @@
 TRAIN_DETR = True
 
 # %%
-PATH = 'C:/Users/tlust/Downloads/mtsd/coco'
-BATCH_SIZE = 32
+PATH = '/dev/shm/scratch.shm/xtlust05/job_19175326.meta-pbs.metacentrum.cz/coco/'
+BATCH_SIZE = 12
 
 # %%
 import os
+
 import torch
+torch.set_float32_matmul_precision('medium')
+
 import torchvision
 from transformers import DetrImageProcessor
 from torch.utils.data import DataLoader
@@ -174,9 +177,9 @@ if TRAIN_DETR:
 
   # 2: init model
   model = Detr(
-    lr=1e-5, 
-    lr_backbone=5e-6,
-    weight_decay=0, # 1e-4
+    lr=1e-4, 
+    lr_backbone=1e-5,
+    weight_decay=1e-4,
     train_dl=train_dataloader, 
     val_dl=val_dataloader,
     num_labels=len(train_dataset.coco.cats)
@@ -184,11 +187,11 @@ if TRAIN_DETR:
 
   # 3: fine-tune
   trainer = Trainer(
-    devices=1, 
+    devices=2, 
     accelerator="gpu",
-    max_epochs=10, 
+    max_epochs=-1, 
     gradient_clip_val=0.1, 
-    accumulate_grad_batches=8,
+    accumulate_grad_batches=64,
     log_every_n_steps=1,
     precision="bf16"
   )
